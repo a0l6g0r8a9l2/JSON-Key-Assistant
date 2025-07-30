@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "JSON Key Assistant",
+  "version": "2.0.0",
+  "description": "Упрощает работу с ключами из JSON-объектов. Копируйте JSON и используйте Alt+V для последовательной вставки ключей.",
+  
+  "permissions": [
+    "clipboardRead",
+    "clipboardWrite",
+    "alarms",
+    "activeTab",
+    "scripting"
+  ],
+  
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "JSON Key Assistant",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  
+  "commands": {
+    "copy-next-key": {
+      "suggested_key": {
+        "default": "Alt+V"
+      },
+      "description": "Скопировать следующий ключ"
+    },
+    "reset-process": {
+      "suggested_key": {
+        "default": "Alt+C"
+      },
+      "description": "Сбросить процесс"
+    }
+  }
+}
