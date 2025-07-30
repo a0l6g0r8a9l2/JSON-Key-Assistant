@@ -20,6 +20,13 @@ class JSONKeyAssistant {
   
   processClipboardContent(content) {
     if (this.isProcessing) return;
+    
+    // Проверяем, не является ли это одним из наших ключей
+    if (this.isAutoMode && this.keys.includes(content.trim())) {
+      console.log('Игнорируем собственный ключ:', content.trim());
+      return;
+    }
+    
     this.isProcessing = true;
     
     try {
@@ -37,19 +44,24 @@ class JSONKeyAssistant {
       this.currentIndex = 0;
       this.isAutoMode = true; // Включаем автоматический режим
       
-      // Сразу копируем первый ключ в буфер обмена
+      // Копируем первый ключ в буфер обмена с небольшой задержкой
       if (this.keys.length > 0) {
-        this.copyKeyToClipboard(this.keys[0]);
-        this.currentIndex = 0; // Текущий ключ - первый (уже в буфере)
+        setTimeout(() => {
+          this.copyKeyToClipboard(this.keys[0]);
+          console.log(`Первый ключ в буфере: ${this.keys[0]}`);
+        }, 200);
       }
       
       // Показываем синий значок с количеством ключей
       this.showSuccessBadge(this.keys.length);
       
+      console.log(`Обработан JSON с ${this.keys.length} ключами:`, this.keys);
+      
     } catch (error) {
       // Если JSON невалидный, показываем красный значок
       this.showErrorBadge();
       this.isAutoMode = false;
+      console.log('Невалидный JSON');
     }
     
     this.isProcessing = false;
@@ -101,23 +113,32 @@ class JSONKeyAssistant {
   
   // Обработка события вставки - копируем следующий ключ
   async handlePasteEvent() {
+    console.log(`handlePasteEvent: isAutoMode=${this.isAutoMode}, currentIndex=${this.currentIndex}, keys.length=${this.keys.length}`);
+    
     if (!this.isAutoMode) {
+      console.log('Авто-режим выключен');
       return false;
     }
     
     // После вставки текущего ключа, подготавливаем следующий
     const nextIndex = this.currentIndex + 1;
+    console.log(`Следующий индекс: ${nextIndex}`);
     
     if (nextIndex < this.keys.length) {
       const nextKey = this.keys[nextIndex];
+      console.log(`Копируем следующий ключ: ${nextKey}`);
+      
       await this.copyKeyToClipboard(nextKey);
       this.currentIndex = nextIndex;
       
       // Обновляем значок
       const remaining = this.keys.length - this.currentIndex;
       this.showSuccessBadge(remaining);
+      
+      console.log(`Новый currentIndex: ${this.currentIndex}, осталось: ${remaining}`);
     } else {
       // Больше ключей нет
+      console.log('Все ключи обработаны');
       this.hideBadge();
       this.isAutoMode = false;
     }
@@ -213,6 +234,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 // Обрабатываем сообщения от content script и popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('Получено сообщение:', request.action);
+  
   if (request.action === 'clipboardChanged') {
     console.log('Получены данные из буфера обмена:', request.content.substring(0, 100) + '...');
     assistant.processClipboardContent(request.content);
@@ -222,8 +245,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     assistant.resetProcess();
     sendResponse({ success: true });
   } else if (request.action === 'pasteEvent') {
+    console.log('Получено событие вставки');
     // Обрабатываем событие вставки
     assistant.handlePasteEvent().then((handled) => {
+      console.log('Событие вставки обработано:', handled);
       sendResponse({ handled });
     });
     return true; // Асинхронный ответ

@@ -6,7 +6,7 @@ let isProcessingPaste = false;
 
 // Функция для проверки буфера обмена
 async function checkClipboard() {
-  if (isProcessingClipboard) return;
+  if (isProcessingClipboard || isProcessingPaste) return;
   
   try {
     const text = await navigator.clipboard.readText();
@@ -28,24 +28,24 @@ async function checkClipboard() {
 async function handlePasteEvent(event) {
   if (isProcessingPaste) return;
   
+  isProcessingPaste = true;
+  
   try {
-    isProcessingPaste = true;
-    
     // Небольшая задержка, чтобы вставка успела произойти
     setTimeout(async () => {
       try {
         // Отправляем сообщение в background script о событии вставки
-        const response = await chrome.runtime.sendMessage({
+        await chrome.runtime.sendMessage({
           action: 'pasteEvent'
         });
-        
-        console.log('Paste event processed:', response);
       } catch (error) {
         console.error('Ошибка обработки события вставки:', error);
       } finally {
-        isProcessingPaste = false;
+        setTimeout(() => {
+          isProcessingPaste = false;
+        }, 200);
       }
-    }, 10);
+    }, 50);
     
   } catch (error) {
     console.error('Ошибка обработки события вставки:', error);
@@ -61,9 +61,7 @@ document.addEventListener('copy', () => {
 // Мониторим события вставки
 document.addEventListener('paste', handlePasteEvent);
 
-// Не нужно дублировать обработку keydown, так как paste событие уже покрывает Ctrl+V
-
-// Также проверяем периодически
+// Также проверяем периодически (для случаев копирования из других приложений)
 setInterval(checkClipboard, 1000);
 
 // Слушаем сообщения от background script
@@ -79,7 +77,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       
       setTimeout(() => {
         isProcessingClipboard = false;
-      }, 100);
+      }, 200);
       
       sendResponse({ success: true });
     }).catch((error) => {
@@ -107,7 +105,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         
         setTimeout(() => {
           isProcessingClipboard = false;
-        }, 100);
+        }, 200);
         
         sendResponse({ success: successful });
       } catch (fallbackError) {
