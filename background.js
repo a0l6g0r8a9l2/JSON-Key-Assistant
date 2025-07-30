@@ -40,7 +40,7 @@ class JSONKeyAssistant {
       // Сразу копируем первый ключ в буфер обмена
       if (this.keys.length > 0) {
         this.copyKeyToClipboard(this.keys[0]);
-        this.currentIndex = 1; // Следующий ключ будет первым в очереди
+        this.currentIndex = 0; // Текущий ключ - первый (уже в буфере)
       }
       
       // Показываем синий значок с количеством ключей
@@ -101,22 +101,25 @@ class JSONKeyAssistant {
   
   // Обработка события вставки - копируем следующий ключ
   async handlePasteEvent() {
-    if (!this.isAutoMode || this.currentIndex >= this.keys.length) {
+    if (!this.isAutoMode) {
       return false;
     }
     
-    const keyToCopy = this.keys[this.currentIndex];
-    await this.copyKeyToClipboard(keyToCopy);
+    // После вставки текущего ключа, подготавливаем следующий
+    const nextIndex = this.currentIndex + 1;
     
-    this.currentIndex++;
-    
-    // Обновляем значок
-    const remaining = this.keys.length - this.currentIndex + 1; // +1 потому что текущий ключ уже в буфере
-    if (remaining > 0) {
+    if (nextIndex < this.keys.length) {
+      const nextKey = this.keys[nextIndex];
+      await this.copyKeyToClipboard(nextKey);
+      this.currentIndex = nextIndex;
+      
+      // Обновляем значок
+      const remaining = this.keys.length - this.currentIndex;
       this.showSuccessBadge(remaining);
     } else {
+      // Больше ключей нет
       this.hideBadge();
-      this.isAutoMode = false; // Выключаем автоматический режим
+      this.isAutoMode = false;
     }
     
     return true;
@@ -187,13 +190,12 @@ class JSONKeyAssistant {
   
   // Методы для popup
   getState() {
-    const currentKeyIndex = this.isAutoMode ? Math.max(0, this.currentIndex - 1) : this.currentIndex;
     return {
       keys: this.keys,
-      currentIndex: currentKeyIndex,
+      currentIndex: this.currentIndex,
       hasKeys: this.keys.length > 0,
       nextKey: this.currentIndex < this.keys.length ? this.keys[this.currentIndex] : null,
-      remaining: Math.max(0, this.keys.length - currentKeyIndex),
+      remaining: this.keys.length - this.currentIndex,
       isAutoMode: this.isAutoMode
     };
   }

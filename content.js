@@ -31,20 +31,22 @@ async function handlePasteEvent(event) {
   try {
     isProcessingPaste = true;
     
-    // Отправляем сообщение в background script о событии вставки
-    const response = await chrome.runtime.sendMessage({
-      action: 'pasteEvent'
-    });
-    
-    // Если background script обработал событие (подготовил следующий ключ)
-    if (response && response.handled) {
-      // Небольшая задержка, чтобы новый ключ успел попасть в буфер
-      setTimeout(() => {
+    // Небольшая задержка, чтобы вставка успела произойти
+    setTimeout(async () => {
+      try {
+        // Отправляем сообщение в background script о событии вставки
+        const response = await chrome.runtime.sendMessage({
+          action: 'pasteEvent'
+        });
+        
+        console.log('Paste event processed:', response);
+      } catch (error) {
+        console.error('Ошибка обработки события вставки:', error);
+      } finally {
         isProcessingPaste = false;
-      }, 100);
-    } else {
-      isProcessingPaste = false;
-    }
+      }
+    }, 10);
+    
   } catch (error) {
     console.error('Ошибка обработки события вставки:', error);
     isProcessingPaste = false;
@@ -59,15 +61,7 @@ document.addEventListener('copy', () => {
 // Мониторим события вставки
 document.addEventListener('paste', handlePasteEvent);
 
-// Также отслеживаем комбинацию Ctrl+V
-document.addEventListener('keydown', (event) => {
-  if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
-    // Задержка, чтобы событие paste успело сработать
-    setTimeout(() => {
-      handlePasteEvent(event);
-    }, 50);
-  }
-});
+// Не нужно дублировать обработку keydown, так как paste событие уже покрывает Ctrl+V
 
 // Также проверяем периодически
 setInterval(checkClipboard, 1000);

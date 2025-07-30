@@ -84,7 +84,7 @@ class PopupUI {
         // Уже вставленные ключи
         li.classList.add('completed');
       } else if (index === state.currentIndex && state.isAutoMode) {
-        // В авто-режиме текущий ключ уже в буфере обмена
+        // В авто-режиме текущий ключ в буфере обмена, готов к вставке
         li.classList.add('next');
         li.title = 'В буфере обмена - нажмите Ctrl+V для вставки';
       } else if (index === state.currentIndex) {
