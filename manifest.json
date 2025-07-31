@@ -49,7 +49,7 @@
   "commands": {
     "copy-next-key": {
       "suggested_key": {
-        "default": "Alt+V"
+        "default": "Ctrl+V"
       },
       "description": "Скопировать следующий ключ"
     },
